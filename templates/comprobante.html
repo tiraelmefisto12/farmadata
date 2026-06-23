@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<div class="card" id="comprobante" style="max-width:450px; margin:0 auto;">
+    <div style="text-align:center; border-bottom:2px dashed var(--border); padding-bottom:15px; margin-bottom:15px;">
+        <div style="font-size:2rem;">💊</div>
+        <h2 style="margin-bottom:0;">FarmaData</h2>
+        <p style="color:var(--text-soft); font-size:0.85rem;">Sistema de Gestión Farmacéutica</p>
+    </div>
+
+    <div style="text-align:center; margin-bottom:15px;">
+        <div style="font-weight:700; font-size:1.1rem; color:var(--primary);">
+            {{ venta.tipo_comprobante|upper }} ELECTRÓNICA
+        </div>
+        <div style="font-size:1.3rem; font-weight:bold; letter-spacing:1px;">
+            {{ venta.numero_comprobante }}
+        </div>
+    </div>
+
+    <div style="font-size:0.9rem; margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-soft);">Fecha:</span>
+            <strong>{{ venta.fecha.strftime('%d/%m/%Y %H:%M') }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-soft);">Cliente:</span>
+            <strong>{{ venta.cliente_nombre or "Cliente varios" }}</strong>
+        </div>
+        {% if venta.cliente_dni %}
+        <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-soft);">DNI/RUC:</span>
+            <strong>{{ venta.cliente_dni }}</strong>
+        </div>
+        {% endif %}
+        <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-soft);">Método de pago:</span>
+            <strong>{{ venta.metodo_pago }}</strong>
+        </div>
+    </div>
+
+    <table style="width:100%; font-size:0.9rem; margin-bottom:15px;">
+        <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left; padding:6px 0;">Producto</th>
+                <th style="text-align:center; padding:6px 0;">Cant.</th>
+                <th style="text-align:right; padding:6px 0;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td style="padding:6px 0;">{{ item.producto.nombre }}</td>
+                <td style="text-align:center;">{{ item.cantidad }}</td>
+                <td style="text-align:right;">S/. {{ "%.2f"|format(item.precio_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="border-top:2px dashed var(--border); padding-top:15px; text-align:right;">
+        <div style="font-size:1.4rem; font-weight:bold; color:var(--primary);">
+            TOTAL: S/. {{ "%.2f"|format(total) }}
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-top:20px; color:var(--text-soft); font-size:0.85rem;">
+        ¡Gracias por su compra! 💊<br>
+        Este documento es un comprobante de pago electrónico
+    </div>
+</div>
+
+<div style="text-align:center; margin-top:20px; display:flex; gap:10px; justify-content:center;" class="no-print">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Imprimir comprobante</button>
+    <a href="/ventas" class="btn btn-success">➕ Nueva venta</a>
+</div>
+
+<style>
+    @media print {
+        nav, .no-print { display: none !important; }
+        body { background: white !important; }
+        #comprobante { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+</style>
+{% endblock %}

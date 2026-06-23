@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>🛒 Ventas</h1>
+
+<!-- AGREGAR PRODUCTOS -->
+<div class="card">
+    <h2>🛍️ Agregar productos a la venta</h2>
+    <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:10px; align-items:end;">
+        <div class="form-group" style="margin-bottom:0;">
+            <label>Medicamento</label>
+            <select id="selProducto">
+                <option value="">-- Selecciona --</option>
+                {% for p in productos %}
+                <option value="{{ p.id }}" data-precio="{{ p.precio }}" data-stock="{{ p.stock }}" data-nombre="{{ p.nombre }}">
+                    {{ p.nombre }} — S/. {{ "%.2f"|format(p.precio) }} (Stock: {{ p.stock }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label>Cantidad</label>
+            <input type="number" id="inpCantidad" min="1" value="1">
+        </div>
+        <button type="button" onclick="agregarAlCarrito()" class="btn btn-primary">➕ Agregar</button>
+    </div>
+</div>
+
+<!-- CARRITO -->
+<div class="card">
+    <h2>🧺 Carrito</h2>
+    <table id="tablaCarrito" style="display:none;">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Precio</th>
+                <th>Subtotal</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoCarrito"></tbody>
+    </table>
+    <p id="mensajeVacio" style="color:var(--text-soft); text-align:center; padding:20px;">
+        El carrito está vacío. Agrega productos arriba.
+    </p>
+    <div id="totalCarrito" style="text-align:right; margin-top:15px; font-size:1.2rem; font-weight:bold; color:var(--primary);"></div>
+</div>
+
+<!-- DATOS DEL COMPROBANTE -->
+<div class="card" id="cardFinalizar" style="display:none;">
+    <h2>🧾 Datos del comprobante</h2>
+    <form id="formVenta" action="/ventas/registrar" method="POST">
+        <div id="contenedorItems"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Tipo de comprobante</label>
+                <select name="tipo_comprobante" required>
+                    <option value="Boleta">Boleta</option>
+                    <option value="Factura">Factura</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Método de pago</label>
+                <select name="metodo_pago" required>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Yape/Plin">Yape / Plin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>DNI / RUC del cliente (opcional)</label>
+                <input type="text" name="cliente_dni" placeholder="Ej: 12345678">
+            </div>
+            <div class="form-group">
+                <label>Nombre del cliente (opcional)</label>
+                <input type="text" name="cliente_nombre" placeholder="Ej: Juan Pérez">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">✅ Registrar venta y generar comprobante</button>
+    </form>
+</div>
+
+<!-- HISTORIAL DE VENTAS -->
+<div class="card">
+    <h2>📋 Últimas 50 ventas</h2>
+    {% if ventas %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Comprobante</th>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Total</th>
+                <th>Pago</th>
+                <th>Fecha</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in ventas %}
+            <tr>
+                <td>{{ v.id }}</td>
+                <td>
+                    {% if v.numero_comprobante %}
+                        <span style="font-size:0.8rem; color:var(--text-soft);">{{ v.tipo_comprobante }}</span><br>
+                        <strong>{{ v.numero_comprobante }}</strong>
+                    {% else %}
+                        <span style="color:var(--text-soft);">—</span>
+                    {% endif %}
+                </td>
+                <td><strong>{{ v.producto.nombre }}</strong></td>
+                <td>{{ v.cantidad }}</td>
+                <td><strong>S/. {{ "%.2f"|format(v.precio_total) }}</strong></td>
+                <td>{{ v.metodo_pago or "—" }}</td>
+                <td style="color:var(--text-soft); font-size:0.85rem;">
+                    {{ v.fecha.strftime('%d/%m/%Y %H:%M') }}
+                </td>
+                <td>
+                    {% if v.numero_comprobante %}
+                        <a href="/ventas/comprobante/{{ v.numero_comprobante }}" class="btn btn-primary" style="padding:5px 12px; font-size:0.8rem;">👁️ Ver</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="color:var(--text-soft); text-align:center; padding:30px;">
+            No hay ventas registradas aún.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let carrito = [];
+
+    function agregarAlCarrito() {
+        const sel = document.getElementById('selProducto');
+        const opt = sel.options[sel.selectedIndex];
+        const cantidadInput = document.getElementById('inpCantidad');
+
+        if (!sel.value) { alert('Selecciona un producto'); return; }
+
+        const cantidad = parseInt(cantidadInput.value);
+        const stock = parseInt(opt.dataset.stock);
+
+        if (isNaN(cantidad) || cantidad < 1) { alert('Cantidad inválida'); return; }
+
+        const existente = carrito.find(item => item.id == sel.value);
+        const cantidadTotal = existente ? existente.cantidad + cantidad : cantidad;
+
+        if (cantidadTotal > stock) {
+            alert('No hay suficiente stock. Disponible: ' + stock);
+            return;
+        }
+
+        if (existente) {
+            existente.cantidad = cantidadTotal;
+        } else {
+            carrito.push({
+                id: sel.value,
+                nombre: opt.dataset.nombre,
+                precio: parseFloat(opt.dataset.precio),
+                cantidad: cantidad,
+                stock: stock
+            });
+        }
+
+        sel.value = '';
+        cantidadInput.value = 1;
+        renderCarrito();
+    }
+
+    function quitarDelCarrito(id) {
+        carrito = carrito.filter(item => item.id != id);
+        renderCarrito();
+    }
+
+    function renderCarrito() {
+        const cuerpo = document.getElementById('cuerpoCarrito');
+        const tabla = document.getElementById('tablaCarrito');
+        const mensajeVacio = document.getElementById('mensajeVacio');
+        const cardFinalizar = document.getElementById('cardFinalizar');
+        const totalDiv = document.getElementById('totalCarrito');
+        const contenedorItems = document.getElementById('contenedorItems');
+
+        cuerpo.innerHTML = '';
+        contenedorItems.innerHTML = '';
+
+        if (carrito.length === 0) {
+            tabla.style.display = 'none';
+            mensajeVacio.style.display = 'block';
+            cardFinalizar.style.display = 'none';
+            totalDiv.textContent = '';
+            return;
+        }
+
+        tabla.style.display = 'table';
+        mensajeVacio.style.display = 'none';
+        cardFinalizar.style.display = 'block';
+
+        let total = 0;
+        carrito.forEach(item => {
+            const subtotal = item.precio * item.cantidad;
+            total += subtotal;
+
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${item.nombre}</td>
+                <td>${item.cantidad}</td>
+                <td>S/. ${item.precio.toFixed(2)}</td>
+                <td>S/. ${subtotal.toFixed(2)}</td>
+                <td><button type="button" onclick="quitarDelCarrito(${item.id})" class="btn btn-danger" style="padding:4px 10px; font-size:0.8rem;">✖</button></td>
+            `;
+            cuerpo.appendChild(fila);
+
+            const inputId = document.createElement('input');
+            inputId.type = 'hidden';
+            inputId.name = 'producto_id[]';
+            inputId.value = item.id;
+            contenedorItems.appendChild(inputId);
+
+            const inputCant = document.createElement('input');
+            inputCant.type = 'hidden';
+            inputCant.name = 'cantidad[]';
+            inputCant.value = item.cantidad;
+            contenedorItems.appendChild(inputCant);
+        });
+
+        totalDiv.textContent = 'TOTAL: S/. ' + total.toFixed(2);
+    }
+</script>
+{% endblock %}

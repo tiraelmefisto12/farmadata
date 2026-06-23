@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>🛍️ Compras</h1>
+
+<!-- FORMULARIO REGISTRAR COMPRA -->
+<div class="card">
+    <h2>➕ Registrar nueva compra</h2>
+    <form action="/compras/registrar" method="POST">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Proveedor</label>
+                <select name="proveedor_id" required>
+                    <option value="">-- Selecciona proveedor --</option>
+                    {% for p in proveedores %}
+                    <option value="{{ p.id }}">{{ p.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Medicamento</label>
+                <select name="producto_id" required>
+                    <option value="">-- Selecciona producto --</option>
+                    {% for p in productos %}
+                    <option value="{{ p.id }}">
+                        {{ p.nombre }} (Stock actual: {{ p.stock }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Cantidad a comprar</label>
+                <input type="number" name="cantidad" min="1" placeholder="0" required>
+            </div>
+            <div class="form-group">
+                <label>Precio de compra unitario (S/.)</label>
+                <input type="number" name="precio_compra" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">✅ Registrar compra</button>
+    </form>
+</div>
+
+<!-- HISTORIAL DE COMPRAS -->
+<div class="card">
+    <h2>📋 Últimas 50 compras</h2>
+    {% if compras %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Proveedor</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Total</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in compras %}
+            <tr>
+                <td>{{ c.id }}</td>
+                <td><strong>{{ c.proveedor.nombre }}</strong></td>
+                <td>{{ c.producto.nombre }}</td>
+                <td>
+                    <span style="color:var(--success); font-weight:600;">
+                        +{{ c.cantidad }}
+                    </span>
+                </td>
+                <td>S/. {{ "%.2f"|format(c.precio_compra) }}</td>
+                <td><strong>S/. {{ "%.2f"|format(c.precio_total) }}</strong></td>
+                <td style="color:var(--text-soft); font-size:0.85rem;">
+                    {{ c.fecha.strftime('%d/%m/%Y %H:%M') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="color:var(--text-soft); text-align:center; padding:30px;">
+            No hay compras registradas aún.
+        </p>
+    {% endif %}
+</div>
+
+<a href="/proveedores" class="btn btn-primary">🏭 Ver Proveedores</a>
+{% endblock %}

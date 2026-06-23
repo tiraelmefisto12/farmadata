@@ -1,0 +1,24 @@
+# Entorno virtual
+venv/
+
+# Base de datos local
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code
+.vscode/
+
+# Variables de entorno
+.env
+
+# Scripts de un solo uso
+generar_hash.py
+datos_prueba.py

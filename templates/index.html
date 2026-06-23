@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>📊 Dashboard</h1>
+
+<!-- MÉTRICAS DEL DÍA -->
+<div class="metricas">
+    <div class="metrica">
+        <div class="numero">{{ resumen.total_ventas if resumen else 0 }}</div>
+        <div class="etiqueta">Ventas hoy</div>
+    </div>
+    <div class="metrica">
+        <div class="numero">S/. {{ "%.2f"|format(resumen.total_ingresos if resumen else 0) }}</div>
+        <div class="etiqueta">Ingresos hoy</div>
+    </div>
+    <div class="metrica">
+        <div class="numero" style="font-size:1.1rem; padding-top:10px;">
+            {{ resumen.producto_mas_vendido if resumen else "—" }}
+        </div>
+        <div class="etiqueta">Producto más vendido hoy</div>
+    </div>
+    <div class="metrica" style="border-top-color: {% if alertas > 0 %}var(--danger){% else %}var(--success){% endif %}">
+        <div class="numero" style="color: {% if alertas > 0 %}var(--danger){% else %}var(--success){% endif %}">
+            {{ alertas }}
+        </div>
+        <div class="etiqueta">Alertas de stock bajo</div>
+    </div>
+    <div class="metrica">
+        <div class="numero">{{ total_productos }}</div>
+        <div class="etiqueta">Productos registrados</div>
+    </div>
+    <div class="metrica">
+        <div class="numero">S/. {{ "%.2f"|format(ingresos_semana) }}</div>
+        <div class="etiqueta">Ingresos esta semana</div>
+    </div>
+</div>
+
+<!-- FILA 1: Ingresos 7 días + Ventas por categoría -->
+<div class="graficas-grid">
+    <div class="card">
+        <h2>📈 Ingresos últimos 7 días</h2>
+        <canvas id="graficaIngresos" height="200"></canvas>
+    </div>
+    <div class="card">
+        <h2>🥧 Ventas por categoría</h2>
+        <canvas id="graficaCategorias" height="200"></canvas>
+    </div>
+</div>
+
+<!-- FILA 2: Top 5 productos + Ventas por hora -->
+<div class="graficas-grid">
+    <div class="card">
+        <h2>🏆 Top 5 productos más vendidos</h2>
+        <canvas id="graficaTop" height="200"></canvas>
+    </div>
+    <div class="card">
+        <h2>🕐 Ventas por hora del día</h2>
+        <canvas id="graficaHoras" height="200"></canvas>
+    </div>
+</div>
+
+{% if session.rol == 'admin' %}
+<!-- BOTÓN ETL (solo admin) -->
+<div class="card">
+    <h2>⚙️ Pipeline ETL</h2>
+    <p style="color:var(--text-soft); margin-bottom:15px;">
+        El pipeline se ejecuta automáticamente con cada venta. Usa este botón solo si necesitas
+        re-procesar el resumen del día manualmente.
+    </p>
+    <form action="/etl/ejecutar" method="POST">
+        <button type="submit" class="btn btn-primary">🔄 Re-ejecutar ETL manualmente</button>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor  = isDark ? '#e2e8f0' : '#2d3748';
+    const gridColor  = isDark ? '#2d3748' : '#e2e8f0';
+
+    // Datos del servidor
+    const fechas    = {{ fechas   | tojson }};
+    const ingresos  = {{ ingresos | tojson }};
+    const categorias      = {{ categorias      | tojson }};
+    const cat_ingresos    = {{ cat_ingresos    | tojson }};
+    const top_nombres     = {{ top_nombres     | tojson }};
+    const top_cantidades  = {{ top_cantidades  | tojson }};
+    const horas           = {{ horas           | tojson }};
+    const horas_ventas    = {{ horas_ventas    | tojson }};
+
+    const colores = ['#3b82f6','#34d399','#f59e0b','#f87171','#a78bfa','#06b6d4','#ec4899'];
+
+    // 1. Ingresos 7 días
+    new Chart(document.getElementById('graficaIngresos'), {
+        type: 'bar',
+        data: {
+            labels: fechas,
+            datasets: [{ label: 'S/.', data: ingresos,
+                backgroundColor: '#3b82f6', borderRadius: 6 }]
+        },
+        options: { responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+                x: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+
+    // 2. Ventas por categoría
+    new Chart(document.getElementById('graficaCategorias'), {
+        type: 'doughnut',
+        data: {
+            labels: categorias,
+            datasets: [{ data: cat_ingresos, backgroundColor: colores }]
+        },
+        options: { responsive: true,
+            plugins: { legend: { position: 'right',
+                labels: { color: textColor, padding: 15 } } }
+        }
+    });
+
+    // 3. Top 5 productos
+    new Chart(document.getElementById('graficaTop'), {
+        type: 'bar',
+        data: {
+            labels: top_nombres,
+            datasets: [{ label: 'Unidades', data: top_cantidades,
+                backgroundColor: colores, borderRadius: 6 }]
+        },
+        options: { indexAxis: 'y', responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+
+    // 4. Ventas por hora
+    new Chart(document.getElementById('graficaHoras'), {
+        type: 'line',
+        data: {
+            labels: horas,
+            datasets: [{ label: 'Ventas', data: horas_ventas,
+                borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.15)',
+                fill: true, tension: 0.4, pointRadius: 4 }]
+        },
+        options: { responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+                x: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+</script>
+{% endblock %}

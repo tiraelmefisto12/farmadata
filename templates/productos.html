@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>📦 Productos</h1>
+
+<!-- FORMULARIO AGREGAR PRODUCTO -->
+<div class="card">
+    <h2>➕ Agregar nuevo producto</h2>
+    <form action="/productos/agregar" method="POST">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Nombre del medicamento</label>
+                <input type="text" name="nombre" placeholder="Ej: Paracetamol 500mg" required>
+            </div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <select name="categoria" required>
+                    <option value="">-- Selecciona --</option>
+                    <option>Analgésico</option>
+                    <option>Antibiótico</option>
+                    <option>Antiinflamatorio</option>
+                    <option>Vitamina</option>
+                    <option>Antialérgico</option>
+                    <option>Gastrointestinal</option>
+                    <option>Cardiovascular</option>
+                    <option>Antidiabético</option>
+                    <option>Corticoide</option>
+                    <option>Respiratorio</option>
+                    <option>Sistema Nervioso</option>
+                    <option>Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Precio (S/.)</label>
+                <input type="number" name="precio" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label>Stock inicial</label>
+                <input type="number" name="stock" min="0" placeholder="0" required>
+            </div>
+            <div class="form-group">
+                <label>Stock mínimo (alerta)</label>
+                <input type="number" name="stock_minimo" min="0" placeholder="10">
+            </div>
+            <div class="form-group">
+                <label>Fecha de vencimiento</label>
+                <input type="date" name="fecha_vencimiento">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">✅ Agregar producto</button>
+    </form>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card">
+    <h2>🔍 Buscar producto</h2>
+    <form action="/productos" method="GET" style="display:flex; gap:10px;">
+        <input
+            type="text"
+            name="buscar"
+            placeholder="Escribe el nombre del medicamento..."
+            value="{{ busqueda }}"
+            style="flex:1;"
+        >
+        <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+        {% if busqueda %}
+            <a href="/productos" class="btn btn-warning">✖ Limpiar</a>
+        {% endif %}
+    </form>
+    {% if busqueda %}
+        <p style="margin-top:10px; color:var(--text-soft);">
+            Resultados para: <strong>"{{ busqueda }}"</strong>
+            — {{ productos|length }} encontrado(s)
+        </p>
+    {% endif %}
+</div>
+
+<!-- LISTA DE PRODUCTOS -->
+<div class="card">
+    <h2>📋 Lista de productos ({{ productos|length }})</h2>
+    {% if productos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Stock mín.</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productos %}
+            {% set dias = (p.fecha_vencimiento - hoy).days if p.fecha_vencimiento else 999 %}
+            <tr>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td>{{ p.categoria }}</td>
+                <td>S/. {{ "%.2f"|format(p.precio) }}</td>
+                <td>{{ p.stock }}</td>
+                <td>{{ p.stock_minimo }}</td>
+                <td>
+                    {% if p.fecha_vencimiento %}
+                        {% if dias <= 0 %}
+                            <span style="color:var(--danger); font-weight:600;">
+                                🚨 {{ p.fecha_vencimiento }}
+                            </span>
+                        {% elif dias <= 30 %}
+                            <span style="color:var(--warning); font-weight:600;">
+                                ⚠️ {{ p.fecha_vencimiento }} ({{ dias }}d)
+                            </span>
+                        {% else %}
+                            <span style="color:var(--success);">
+                                ✅ {{ p.fecha_vencimiento }}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color:var(--text-soft);">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dias <= 0 %}
+                        <span class="alerta-badge">🚨 Vencido</span>
+                    {% elif dias <= 30 %}
+                        <span class="alerta-badge">⚠️ Por vencer</span>
+                    {% elif p.stock <= p.stock_minimo %}
+                        <span class="alerta-badge">📦 Stock bajo</span>
+                    {% else %}
+                        <span style="color:var(--success); font-weight:600;">✅ OK</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form action="/productos/eliminar/{{ p.id }}" method="POST"
+                          onsubmit="return confirm('¿Eliminar {{ p.nombre }}?')">
+                        <button type="submit" class="btn btn-danger">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="color:var(--text-soft); text-align:center; padding:30px;">
+            No hay productos registrados aún.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

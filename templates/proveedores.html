@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>🏭 Proveedores</h1>
+
+<!-- FORMULARIO AGREGAR PROVEEDOR -->
+<div class="card">
+    <h2>➕ Agregar nuevo proveedor</h2>
+    <form action="/proveedores/agregar" method="POST">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Nombre de la empresa</label>
+                <input type="text" name="nombre" placeholder="Ej: Laboratorios Farma SAC" required>
+            </div>
+            <div class="form-group">
+                <label>Nombre del contacto</label>
+                <input type="text" name="contacto" placeholder="Ej: Juan Pérez">
+            </div>
+            <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" name="telefono" placeholder="Ej: 999-111-222">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="Ej: contacto@empresa.com">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Dirección</label>
+                <input type="text" name="direccion" placeholder="Ej: Av. Industrial 123, Lima">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">✅ Agregar proveedor</button>
+    </form>
+</div>
+
+<!-- LISTA DE PROVEEDORES -->
+<div class="card">
+    <h2>📋 Lista de proveedores ({{ proveedores|length }})</h2>
+    {% if proveedores %}
+    <table>
+        <thead>
+            <tr>
+                <th>Empresa</th>
+                <th>Contacto</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Dirección</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in proveedores %}
+            <tr>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td>{{ p.contacto or "—" }}</td>
+                <td>{{ p.telefono or "—" }}</td>
+                <td>{{ p.email or "—" }}</td>
+                <td>{{ p.direccion or "—" }}</td>
+                <td>
+                    <form action="/proveedores/eliminar/{{ p.id }}" method="POST"
+                          onsubmit="return confirm('¿Eliminar {{ p.nombre }}?')">
+                        <button type="submit" class="btn btn-danger">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="color:var(--text-soft); text-align:center; padding:30px;">
+            No hay proveedores registrados aún.
+        </p>
+    {% endif %}
+</div>
+
+<a href="/compras" class="btn btn-primary">🛍️ Ver Compras</a>
+{% endblock %}

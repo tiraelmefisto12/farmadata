@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<h1>⚠️ Alertas</h1>
+
+<!-- STOCK BAJO -->
+<div class="card">
+    <h2>📦 Productos con stock bajo ({{ alertas|length }})</h2>
+    {% if alertas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in alertas %}
+            <tr>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td>{{ p.categoria }}</td>
+                <td><span style="color:var(--danger); font-weight:bold; font-size:1.1rem;">{{ p.stock }}</span></td>
+                <td>{{ p.stock_minimo }}</td>
+                <td>
+                    {% if p.stock == 0 %}
+                        <span class="alerta-badge">🚨 Agotado</span>
+                    {% else %}
+                        <span class="alerta-badge">⚠️ Stock bajo</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <div style="text-align:center; padding:30px;">
+            <div style="font-size:3rem;">✅</div>
+            <p style="color:var(--success); font-weight:600; margin-top:10px;">
+                ¡Ningún producto con stock bajo!
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- POR VENCER -->
+<div class="card">
+    <h2>📅 Productos próximos a vencer ({{ por_vencer|length }})</h2>
+    {% if por_vencer %}
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Fecha vencimiento</th>
+                <th>Días restantes</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in por_vencer %}
+            {% set dias = (p.fecha_vencimiento - hoy).days %}
+            <tr>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td>{{ p.categoria }}</td>
+                <td>{{ p.fecha_vencimiento }}</td>
+                <td>
+                    {% if dias <= 0 %}
+                        <span style="color:var(--danger); font-weight:bold;">Vencido</span>
+                    {% else %}
+                        <span style="color:var(--warning); font-weight:bold;">{{ dias }} días</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dias <= 0 %}
+                        <span class="alerta-badge">🚨 Vencido</span>
+                    {% else %}
+                        <span class="alerta-badge">⚠️ Por vencer</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <div style="text-align:center; padding:30px;">
+            <div style="font-size:3rem;">✅</div>
+            <p style="color:var(--success); font-weight:600; margin-top:10px;">
+                ¡Ningún producto próximo a vencer!
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<a href="/productos" class="btn btn-primary">📦 Ir a Productos</a>
+{% endblock %}
