@@ -3,3 +3,6 @@ sqlalchemy
 pandas
 pytest
 pytest-cov
+psycopg2-binary
+gunicorn
+werkzeug
